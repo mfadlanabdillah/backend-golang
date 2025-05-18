@@ -1,7 +1,9 @@
 package helpers
 
 import (
+	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/go-playground/validator/v10" // Mengimpor package untuk validasi
@@ -58,6 +60,30 @@ func TranslateErrorMessage(err error) map[string]string {
 
 // IsDuplicateEntryError mendeteksi apakah error dari database adalah duplicate entry
 func IsDuplicateEntryError(err error) bool {
-	// Mengecek apakah error merupakan duplikasi entri
-	return err != nil && strings.Contains(err.Error(), "Duplicate entry")
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "duplicate entry")
+}
+
+// ValidatePasswordStrength memeriksa kekuatan password
+func ValidatePasswordStrength(password string) error {
+	if len(password) < 8 {
+		return errors.New("password must be at least 8 characters long")
+	}
+
+	hasUpper := regexp.MustCompile(`[A-Z]`).MatchString(password)
+	hasLower := regexp.MustCompile(`[a-z]`).MatchString(password)
+	hasNumber := regexp.MustCompile(`[0-9]`).MatchString(password)
+	hasSpecial := regexp.MustCompile(`[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]`).MatchString(password)
+
+	switch {
+	case !hasUpper:
+		return errors.New("password must contain at least one uppercase letter")
+	case !hasLower:
+		return errors.New("password must contain at least one lowercase letter")
+	case !hasNumber:
+		return errors.New("password must contain at least one number")
+	case !hasSpecial:
+		return errors.New("password must contain at least one special character")
+	}
+
+	return nil
 }

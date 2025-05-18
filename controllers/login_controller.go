@@ -6,6 +6,7 @@ import (
 	"fadlan/backend-api/models"
 	"fadlan/backend-api/structs"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -28,23 +29,28 @@ func Login(c *gin.Context) {
 	}
 
 	// Cari user berdasarkan username yang diberikan di database
-	// Jika tidak ditemukan, kirimkan respons error Unauthorized
 	if err := database.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
+		// Tambahkan delay untuk mencegah timing attack
+		time.Sleep(1 * time.Second)
+		
+		// Gunakan pesan error yang sama untuk username/password salah
+		// Ini untuk mencegah user enumeration
 		c.JSON(http.StatusUnauthorized, structs.ErrorResponse{
 			Success: false,
-			Message: "User Not Found",
-			Error:   helpers.TranslateErrorMessage(err),
+			Message: "Invalid username or password",
 		})
 		return
 	}
 
 	// Bandingkan password yang dimasukkan dengan password yang sudah di-hash di database
-	// Jika tidak cocok, kirimkan respons error Unauthorized
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+		// Tambahkan delay untuk mencegah brute force
+		time.Sleep(1 * time.Second)
+		
+		// Gunakan pesan error yang sama untuk username/password salah
 		c.JSON(http.StatusUnauthorized, structs.ErrorResponse{
 			Success: false,
-			Message: "Invalid Password",
-			Error:   helpers.TranslateErrorMessage(err),
+			Message: "Invalid username or password",
 		})
 		return
 	}
